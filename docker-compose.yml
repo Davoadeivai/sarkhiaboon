@@ -1,0 +1,54 @@
+# Local / staging stack: API, Celery worker, Celery beat, PostgreSQL, Redis.
+# Usage:  cp .env.example .env  (edit values)  then  docker compose up --build
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+
+  api:
+    build: ./backend
+    env_file: .env
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60"
+    volumes:
+      - media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: ./backend
+    env_file: .env
+    # Try-on jobs wait on the GPU provider; keep concurrency modest
+    command: celery -A config worker -l info --concurrency 4
+    volumes:
+      - media:/app/media
+    depends_on: [db, redis]
+
+  beat:
+    build: ./backend
+    env_file: .env
+    command: celery -A config beat -l info
+    depends_on: [db, redis]
+
+volumes:
+  pgdata:
+  media:

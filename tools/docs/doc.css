@@ -1,0 +1,25 @@
+@font-face { font-family: "Vazirmatn"; src: url("file:///usr/share/fonts/truetype/vazirmatn/Vazirmatn-Regular.ttf"); font-weight: 400; }
+@font-face { font-family: "Vazirmatn"; src: url("file:///usr/share/fonts/truetype/vazirmatn/Vazirmatn-Bold.ttf"); font-weight: 700; }
+/* Monospace only for Latin, punctuation, arrows and box-drawing; Persian falls back to Vazirmatn (properly joined) */
+@font-face { font-family: "MonoLatin"; src: url("file:///usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf");
+             unicode-range: U+0000-024F, U+2000-206F, U+2190-21FF, U+2500-257F, U+25A0-25FF; }
+html { direction: rtl; }
+body { font-family: "Vazirmatn", sans-serif; font-size: 10.5pt; line-height: 1.85; color: #1e293b; text-align: justify; }
+h1 { color: #1F3864; font-size: 20pt; border-bottom: 2px solid #1F3864; padding-bottom: 6px; margin-top: 0; }
+h2 { color: #1F3864; font-size: 15pt; margin-top: 28px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; page-break-after: avoid; }
+h3 { color: #1F3864; font-size: 13pt; margin-top: 26px; page-break-after: avoid; }
+h4 { color: #334155; font-size: 11pt; margin-top: 18px; margin-bottom: 6px; page-break-after: avoid; }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 14px; font-size: 9.5pt; page-break-inside: auto; }
+tr { page-break-inside: avoid; }
+th { background: #1F3864; color: #fff; font-weight: 700; padding: 6px 8px; text-align: start; }
+td { border: 1px solid #cbd5e1; padding: 5px 8px; text-align: start; vertical-align: top; }
+tr:nth-child(even) td { background: #f1f5f9; }
+code { font-family: "MonoLatin", "Vazirmatn", monospace; font-size: 8.8pt; background: #f1f5f9; padding: 1px 4px; border-radius: 3px; direction: ltr; unicode-bidi: embed; }
+pre { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; font-size: 8.6pt; line-height: 1.7;
+      direction: ltr; text-align: left; white-space: pre-wrap; page-break-inside: avoid; }
+pre code { background: none; padding: 0; direction: ltr; unicode-bidi: normal; }
+blockquote { border-inline-start: 4px solid #166534; background: #f0fdf4; margin: 12px 0; padding: 6px 12px; color: #14532d; }
+hr { border: none; border-top: 1px solid #cbd5e1; margin: 26px 0; }
+a { color: #1F3864; text-decoration: none; }
+ul, ol { padding-inline-start: 22px; }
+li { margin-bottom: 3px; }
