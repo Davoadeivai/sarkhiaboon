@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "سرخیابون",
+    "slug": "sarkhiaboon",
+    "scheme": "sarkhiaboon",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "ir.sarkhiaboon.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "برای گرفتن عکس پرو مجازی به دوربین نیاز داریم.",
+        "NSPhotoLibraryUsageDescription": "برای انتخاب عکس پرو مجازی از گالری به دسترسی عکس‌ها نیاز داریم."
+      }
+    },
+    "android": {
+      "package": "ir.sarkhiaboon.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0E7C7B",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-image",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-font",
+      "expo-sharing",
+      ["expo-splash-screen", { "backgroundColor": "#F2F3F6", "image": "./assets/splash-icon.png", "imageWidth": 160 }],
+      ["expo-localization", { "supportsRTL": true, "forcesRTL": true }],
+      ["expo-image-picker", {
+        "cameraPermission": "برای گرفتن عکس پرو مجازی به دوربین نیاز داریم.",
+        "photosPermission": "برای انتخاب عکس پرو مجازی از گالری به دسترسی عکس‌ها نیاز داریم."
+      }]
+    ]
+  }
+}
