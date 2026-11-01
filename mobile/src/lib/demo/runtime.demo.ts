@@ -6,7 +6,7 @@
  * The try-on is simulated: the garment drawing is placed onto the shopper's own
  * photo on a canvas, after a short queue → processing sequence. No AI runs here.
  */
-import { DEMO_BANNERS, DEMO_CATEGORIES, DEMO_FONTS, DEMO_PRODUCTS, DEMO_SHORTCUTS } from './assets.generated';
+import { DEMO_BANNERS, DEMO_CATEGORIES, DEMO_FONTS, DEMO_PERSON, DEMO_PRODUCTS, DEMO_SHORTCUTS } from './assets.generated';
 
 // The demo page can open at any address; the app's router expects to start at "/".
 if (typeof window !== 'undefined' && window.location.pathname !== '/') {
@@ -21,6 +21,8 @@ type DemoApi = (path: string, method: string, body: unknown) => Promise<{ status
 
 export const DEMO = true;
 export const demoFonts: Record<string, string> = DEMO_FONTS;
+/** Illustrated full-length figure for visitors without their own photo. */
+export const demoPerson: string = DEMO_PERSON;
 export const DEMO_OTP = '12345';
 
 const TRYON_TYPES = ['upper_body', 'lower_body', 'dresses'];

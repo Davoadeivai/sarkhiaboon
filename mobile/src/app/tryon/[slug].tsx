@@ -8,6 +8,7 @@ import { Icon, type IconName } from '@/components/Icon';
 import { BottomBar, ScreenHeader } from '@/components/Screen';
 import { Button, Card, Loading, Notice, T } from '@/components/ui';
 import { isGuest, useAuth } from '@/lib/auth';
+import { demoPerson } from '@/lib/demo/runtime';
 import { faDigits } from '@/lib/format';
 import { photoForm, pickImage, type PickedImage } from '@/lib/media';
 import { useCreateJob, usePhotos, useProduct, useQuota, useUploadPhoto } from '@/lib/queries';
@@ -129,6 +130,14 @@ export default function TryOnStart() {
               <Button label="عکس بگیر" icon="camera" tone="ink" style={{ flex: 1 }} onPress={() => choose('camera')} />
               <Button label="از گالری" icon="image" tone="outline" style={{ flex: 1 }} onPress={() => choose('library')} />
             </View>
+            {demoPerson && (
+              <Button
+                label="با عکس نمونه امتحان کن"
+                tone="ghost"
+                icon="person"
+                onPress={() => setSelected({ kind: 'new', image: { uri: demoPerson!, name: 'sample.jpg', type: 'image/jpeg' } })}
+              />
+            )}
 
             {recent.length > 0 && (
               <View style={{ gap: space.sm }}>

@@ -8,3 +8,4 @@ type DemoApi = (path: string, method: string, body: unknown) => Promise<{ status
 export const DEMO = false;
 export const demoApi: DemoApi | null = null;
 export const demoFonts: Record<string, string> | null = null;
+export const demoPerson: string | null = null;

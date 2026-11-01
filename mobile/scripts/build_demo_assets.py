@@ -104,6 +104,35 @@ shortcuts = [
      "link": {"type": "category", "slug": "cat-4"}},
 ]
 
+def sample_person() -> str:
+    """An illustrated full-length figure, for trying the demo without your own photo."""
+    import random
+    random.seed(7)
+    W, H = 600, 800
+    img = Image.new("RGB", (W, H), (226, 228, 233))
+    d = ImageDraw.Draw(img)
+    for y in range(H):
+        d.line([(0, y), (W, y)], fill=seed._shade((232, 234, 239), 1 - 0.08 * y / H))
+    for _ in range(5000):  # wall texture
+        x, y = random.randrange(W), random.randrange(H)
+        c = random.randint(214, 236)
+        d.point((x, y), fill=(c, c + 1, c + 4))
+    skin, hair, shirt, pants = (205, 166, 140), (58, 44, 40), (238, 238, 236), (58, 62, 80)
+    d.ellipse([W * .43, H * .07, W * .57, H * .2], fill=skin)
+    d.ellipse([W * .42, H * .05, W * .58, H * .13], fill=hair)
+    d.rectangle([W * .475, H * .19, W * .525, H * .235], fill=skin)
+    d.polygon([(W * .33, H * .235), (W * .67, H * .235), (W * .7, H * .55), (W * .3, H * .55)], fill=shirt)
+    d.polygon([(W * .33, H * .235), (W * .25, H * .5), (W * .29, H * .52), (W * .37, H * .32)], fill=shirt)
+    d.polygon([(W * .67, H * .235), (W * .75, H * .5), (W * .71, H * .52), (W * .63, H * .32)], fill=shirt)
+    d.ellipse([W * .245, H * .495, W * .295, H * .535], fill=skin)
+    d.ellipse([W * .705, H * .495, W * .755, H * .535], fill=skin)
+    d.polygon([(W * .31, H * .55), (W * .69, H * .55), (W * .66, H * .95), (W * .53, H * .95), (W * .5, H * .62),
+               (W * .47, H * .95), (W * .34, H * .95)], fill=pants)
+    buf = BytesIO()
+    img.save(buf, format="JPEG", quality=88)
+    return uri(buf.getvalue(), "image/jpeg")
+
+
 FONTS = MOBILE / "node_modules" / "@expo-google-fonts"
 fonts = {
     "Lalezar_400Regular": FONTS / "lalezar/400Regular/Lalezar_400Regular.ttf",
@@ -122,7 +151,8 @@ out.write_text(
     f"export const DEMO_PRODUCTS = {json.dumps(products, ensure_ascii=False)};\n"
     f"export const DEMO_BANNERS = {json.dumps(banners, ensure_ascii=False)};\n"
     f"export const DEMO_SHORTCUTS = {json.dumps(shortcuts, ensure_ascii=False)};\n"
-    f"export const DEMO_FONTS: Record<string, string> = {json.dumps(font_uris)};\n",
+    f"export const DEMO_FONTS: Record<string, string> = {json.dumps(font_uris)};\n"
+    f"export const DEMO_PERSON = {json.dumps(sample_person())};\n",
     encoding="utf-8",
 )
 print(f"wrote {out} ({out.stat().st_size // 1024} KB): {len(products)} products, {len(categories)} categories")
