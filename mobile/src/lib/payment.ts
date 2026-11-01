@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { Platform } from 'react-native';
 
+import { DEMO } from './demo/runtime';
 import { startPayment } from './queries';
 
 /** Must match PAYMENT_RESULT_URL on the server (the bank sends the shopper back here). */
@@ -14,6 +15,12 @@ export const PAYMENT_RETURN_URL = 'sarkhiaboon://payment/result';
  */
 export async function payOrder(number: string): Promise<void> {
   const { payment_url } = await startPayment(number);
+
+  if (DEMO) {
+    // The demo has no bank; the order is marked paid and we go straight to the result.
+    router.replace({ pathname: '/payment/result', params: { order: number, status: 'success' } });
+    return;
+  }
 
   if (Platform.OS === 'web') {
     globalThis.location?.assign(payment_url);

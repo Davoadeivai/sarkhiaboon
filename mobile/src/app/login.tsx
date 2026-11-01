@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Arch } from '@/components/Arch';
 import { Button, Field, IconButton, Notice, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { DEMO } from '@/lib/demo/runtime';
 import { enDigits, faDigits, faPhone } from '@/lib/format';
 import { requestOtp, verifyOtp } from '@/lib/queries';
 import { colors, fonts, GUTTER, radius, space } from '@/theme/tokens';
@@ -138,6 +139,7 @@ export default function LoginScreen() {
           </View>
         )}
 
+        {DEMO && step === 'code' && <Notice text="در نسخه‌ی نمایشی پیامکی ارسال نمی‌شود؛ کد ۱۲۳۴۵ را وارد کن." />}
         {error && <Notice tone="error" text={error} />}
 
         <Button

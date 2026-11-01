@@ -31,18 +31,39 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "asyncRoutes": false
+        }
+      ],
       "expo-image",
       "expo-secure-store",
       "expo-web-browser",
       "expo-font",
       "expo-sharing",
-      ["expo-splash-screen", { "backgroundColor": "#F2F3F6", "image": "./assets/splash-icon.png", "imageWidth": 160 }],
-      ["expo-localization", { "supportsRTL": true, "forcesRTL": true }],
-      ["expo-image-picker", {
-        "cameraPermission": "برای گرفتن عکس پرو مجازی به دوربین نیاز داریم.",
-        "photosPermission": "برای انتخاب عکس پرو مجازی از گالری به دسترسی عکس‌ها نیاز داریم."
-      }]
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#F2F3F6",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160
+        }
+      ],
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true,
+          "forcesRTL": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "برای گرفتن عکس پرو مجازی به دوربین نیاز داریم.",
+          "photosPermission": "برای انتخاب عکس پرو مجازی از گالری به دسترسی عکس‌ها نیاز داریم."
+        }
+      ]
     ]
   }
 }

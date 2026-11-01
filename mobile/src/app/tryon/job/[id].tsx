@@ -9,6 +9,7 @@ import { Icon } from '@/components/Icon';
 import { BottomBar, ScreenHeader } from '@/components/Screen';
 import { Button, ErrorState, Loading, Notice, Price, T } from '@/components/ui';
 import { faDigits, faOrdinal } from '@/lib/format';
+import { DEMO } from '@/lib/demo/runtime';
 import { shareImage } from '@/lib/media';
 import { useJob, useSaveJob } from '@/lib/queries';
 import type { TryOnJob } from '@/lib/types';
@@ -95,6 +96,12 @@ export default function TryOnJobScreen() {
             </T>
           )}
         </View>
+
+        {done && DEMO && (
+          <View style={{ alignSelf: 'stretch' }}>
+            <Notice tone="warn" text="در نسخه‌ی نمایشی، طرح لباس فقط روی عکست گذاشته می‌شود. در اپ واقعی، هوش مصنوعی لباس را با فرم بدن، نور و چین پارچه روی تنت می‌سازد." />
+          </View>
+        )}
 
         {failed && (
           <View style={{ alignSelf: 'stretch', gap: space.md }}>

@@ -1,4 +1,5 @@
 import { useAuth } from './auth';
+import { demoApi } from './demo/runtime';
 import type { AuthResponse } from './types';
 
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '');
@@ -81,12 +82,21 @@ async function renewSession(): Promise<boolean> {
 
 /** Every visitor gets a guest account so they can browse and try on before signing in. */
 export async function startGuestSession(): Promise<void> {
+  if (demoApi) {
+    await useAuth.getState().setSession((await demoApi('/auth/guest/', 'POST', undefined)).data as AuthResponse);
+    return;
+  }
   const res = await rawRequest('/auth/guest/', { method: 'POST', anonymous: true }, null);
   if (!res.ok) throw toApiError(res.status, await res.json().catch(() => null));
   await useAuth.getState().setSession((await res.json()) as AuthResponse);
 }
 
 export async function api<T>(path: string, opts: RequestOptions = {}): Promise<T> {
+  if (demoApi) {
+    const r = await demoApi(path, opts.method ?? 'GET', opts.body);
+    if (r.status >= 400) throw toApiError(r.status, r.data);
+    return r.data as T;
+  }
   let res = await rawRequest(path, opts, useAuth.getState().access);
 
   if (res.status === 401 && !opts.anonymous) {

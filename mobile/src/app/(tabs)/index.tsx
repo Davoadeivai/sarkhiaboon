@@ -6,6 +6,7 @@ import { Arch } from '@/components/Arch';
 import { BannerCarousel, ProductGrid, ProductRail, ShortcutRow } from '@/components/home';
 import { Icon } from '@/components/Icon';
 import { ErrorState, IconButton, Loading, SectionHeader, T } from '@/components/ui';
+import { DEMO } from '@/lib/demo/runtime';
 import { useHome, useQuota } from '@/lib/queries';
 import { faDigits } from '@/lib/format';
 import { colors, GUTTER, space } from '@/theme/tokens';
@@ -25,6 +26,13 @@ export default function HomeScreen() {
             quota.refetch();
           }} tintColor={colors.firouzeh} />}
     >
+      {DEMO && (
+        <View style={{ marginHorizontal: GUTTER, backgroundColor: colors.ink, borderRadius: 999, paddingVertical: 6, paddingHorizontal: space.lg }}>
+          <T variant="tiny" color="#FFFFFF" center>
+            نسخه‌ی نمایشی: محصولات نمونه‌اند و پرداخت واقعی انجام نمی‌شود
+          </T>
+        </View>
+      )}
       <View style={{ paddingHorizontal: GUTTER, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.sm }}>
           <Arch width={18} height={34} bottomRadius={0} background={colors.firouzeh} style={{ marginBottom: 14 }} />

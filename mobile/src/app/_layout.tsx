@@ -11,6 +11,7 @@ import { I18nManager, Platform, View } from 'react-native';
 import { ErrorState } from '@/components/ui';
 import { ApiError, startGuestSession } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { demoFonts } from '@/lib/demo/runtime';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -36,7 +37,7 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({ Lalezar_400Regular, Vazirmatn_400Regular, Vazirmatn_500Medium, Vazirmatn_700Bold });
+  const [fontsLoaded] = useFonts(demoFonts ?? { Lalezar_400Regular, Vazirmatn_400Regular, Vazirmatn_500Medium, Vazirmatn_700Bold });
   const { ready, access, hydrate } = useAuth();
   const [bootError, setBootError] = useState<string | null>(null);
 
