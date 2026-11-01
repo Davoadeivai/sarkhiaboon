@@ -13,7 +13,10 @@ export interface PickedImage {
 export async function pickImage(source: 'camera' | 'library'): Promise<PickedImage | { denied: true } | null> {
   const options: ImagePicker.ImagePickerOptions = { mediaTypes: ['images'], quality: 0.85, exif: false };
   let result: ImagePicker.ImagePickerResult;
-  if (source === 'camera' && Platform.OS !== 'web') {
+  if (source === 'camera' && Platform.OS === 'web') {
+    // In a phone browser this opens the camera directly (file input with "capture").
+    result = await ImagePicker.launchCameraAsync(options);
+  } else if (source === 'camera') {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
     if (!perm.granted) return { denied: true };
     result = await ImagePicker.launchCameraAsync(options);
