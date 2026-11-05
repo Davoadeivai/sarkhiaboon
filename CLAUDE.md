@@ -10,6 +10,8 @@ Read these before doing any work:
 ## Status
 - **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 114 tests pass, live e2e journey 24/24, OpenAPI schema clean (`--fail-on-warn`).
 - **Mobile app: built** (`mobile/`, Expo SDK 58 + TypeScript + Expo Router). All screens done; full customer journey verified on the web build against the live backend (DEVELOPMENT_LOG §7). Not yet run on a physical device; push notifications and offline catalog cache not built.
+- **Store layout (Nov 2026, client request):** red entry screens; home = 3 top slides + category photo tiles + ad slides; category pages with subcategories (مانتو → مدرسه/اداری/مجلسی/راحتی) and their own sliders; products belong to registered shops (`Shop`) and open the shop page; ad slides while try-on runs; try-on results stay in-app only (no share/download, memory-only image cache). DEVELOPMENT_LOG §8.
+- **Try-on model licence:** CatVTON is CC BY-NC-SA (non-commercial). Do not deploy it for this app without written permission; candidates in PROJECT_CONTEXT.
 - **Next:** (a) run the app on real Android/iOS devices, (b) GPU worker: CatVTON Docker image for RunPod Serverless, (c) client-doc updates once path 2 is confirmed (see PROJECT_CONTEXT).
 - Not yet done: Docker stack never actually run; RunPod / Kavenegar / Zarinpal only tested against mocked HTTP; blur threshold needs calibration on real photos; shoes unsupported by engine.
 
@@ -57,7 +59,7 @@ Output: `{"image": "<base64>", "format": "png"}` on success, or `{"error": "<mes
 ## Mobile app (`mobile/`)
 - Expo SDK 58 changes often — check installed type definitions in `node_modules` before using an Expo API (see `mobile/AGENTS.md`). E.g. js-tabs `tabBar` gets `emitter`/`navigateToTab`, not `navigation`.
 - Install packages with `EXPO_OFFLINE=1 npx expo install <pkg>` if the Expo API is unreachable. Typecheck: `npx tsc --noEmit`.
-- Design system in `src/theme/tokens.ts`. The arch (`components/Arch.tsx`) frames ONLY try-on-able things — keep that rule. Fonts: Lalezar (display), Vazirmatn (text). Use start/end, never left/right; wrap digit runs in `ltr()` from `lib/format.ts`.
+- Design system in `src/theme/tokens.ts` (red `anar` is for the entry screens only). The arch (`components/Arch.tsx`) frames ONLY try-on-able things — keep that rule. Fonts: Lalezar (display), Vazirmatn (text). Use start/end, never left/right; wrap digit runs in `ltr()` from `lib/format.ts`.
 - Deep link scheme `sarkhiaboon://` — payment result returns to `sarkhiaboon://payment/result` (web dev: set server `PAYMENT_RESULT_URL=http://localhost:8081/payment/result`).
 - Guest session is created automatically on first launch; OTP verify is sent with the guest token so the server merges cart/closet/favorites.
 

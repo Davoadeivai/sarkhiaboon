@@ -6,7 +6,7 @@
  * The try-on is simulated: the garment drawing is placed onto the shopper's own
  * photo on a canvas, after a short queue → processing sequence. No AI runs here.
  */
-import { DEMO_BANNERS, DEMO_CATEGORIES, DEMO_FONTS, DEMO_PERSON, DEMO_PRODUCTS, DEMO_SHORTCUTS } from './assets.generated';
+import { DEMO_BANNERS, DEMO_CATEGORIES, DEMO_FONTS, DEMO_PERSON, DEMO_PRODUCTS, DEMO_SHOPS } from './assets.generated';
 
 // The demo page can open at any address; the app's router expects to start at "/".
 if (typeof window !== 'undefined' && window.location.pathname !== '/') {
@@ -54,11 +54,18 @@ let seq = 100;
 
 /* ---------------- shaping helpers ---------------- */
 
+type DemoCategory = (typeof DEMO_CATEGORIES)[number];
 const category = (id: number) => DEMO_CATEGORIES.find((c) => c.id === id)!;
-const brief = (id: number) => {
-  const c = category(id);
-  return { id: c.id, name: c.name, slug: c.slug, icon: c.icon };
+const brief = (c: DemoCategory) => ({ id: c.id, name: c.name, slug: c.slug, icon: c.icon, image: c.image });
+const childrenOf = (id: number) => DEMO_CATEGORIES.filter((c) => c.parent_id === id);
+const withChildren = (c: DemoCategory) => ({ ...brief(c), tryon_type: c.tryon_type, children: childrenOf(c.id).map((k) => ({ ...brief(k), tryon_type: k.tryon_type, children: [] })) });
+/** A category and everything under it (a product in «مانتو اداری» is also in «مانتو»). */
+const subtreeIds = (id: number): number[] => [id, ...childrenOf(id).flatMap((k) => subtreeIds(k.id))];
+const shopBrief = (id: number) => {
+  const sh = DEMO_SHOPS.find((x) => x.id === id)!;
+  return { id: sh.id, name: sh.name, slug: sh.slug, logo: sh.logo, city: sh.city };
 };
+const bannerOut = (x: (typeof DEMO_BANNERS)[number]) => ({ id: x.id, title: x.title, image: x.image, position: x.position, link: x.link });
 const supportsTryon = (p: (typeof DEMO_PRODUCTS)[number]) => TRYON_TYPES.includes(p.tryon_type);
 const discount = (p: (typeof DEMO_PRODUCTS)[number]) =>
   p.compare_at_price ? Math.round((1 - p.price / p.compare_at_price) * 100) : 0;
@@ -87,7 +94,8 @@ function listItem(p: (typeof DEMO_PRODUCTS)[number]) {
     price: p.price,
     compare_at_price: p.compare_at_price,
     discount_percent: discount(p),
-    category: brief(p.category_id),
+    category: brief(category(p.category_id)),
+    shop: shopBrief(p.shop_id),
     supports_tryon: supportsTryon(p),
     in_stock: true,
     is_favorite: favorites.has(p.id),
@@ -265,16 +273,34 @@ export const demoApi: DemoApi = async (path, method, body) => {
     if (a === 'home') {
       const all = DEMO_PRODUCTS.map(listItem);
       return ok({
-        banners_top: DEMO_BANNERS.filter((x) => x.position === 'home_top'),
-        shortcuts: DEMO_SHORTCUTS,
-        categories: DEMO_CATEGORIES.map((x) => ({ ...x, children: [] })),
-        banners_middle: DEMO_BANNERS.filter((x) => x.position === 'home_middle'),
+        banners_top: DEMO_BANNERS.filter((x) => x.position === 'home_top').map(bannerOut),
+        shortcuts: [],
+        categories: DEMO_CATEGORIES.filter((x) => !x.parent_id).map(withChildren),
+        banners_middle: DEMO_BANNERS.filter((x) => x.position === 'home_middle').map(bannerOut),
         new_products: [...all].reverse(),
         discounted_products: all.filter((x) => x.compare_at_price),
         tryon_products: all.filter((x) => x.supports_tryon).reverse(),
       });
     }
-    if (a === 'categories') return ok(DEMO_CATEGORIES.map((x) => ({ ...x, children: [] })));
+    if (a === 'categories' && bSeg) {
+      const c = DEMO_CATEGORIES.find((x) => x.slug === decodeURIComponent(bSeg));
+      if (!c) return fail('این دسته پیدا نشد.', 404);
+      // Its own slider, or the parent's when it has none (same rule as the server).
+      let banners = DEMO_BANNERS.filter((x) => x.position === 'category_top' && x.placement === c.slug);
+      const parent = c.parent_id ? category(c.parent_id) : null;
+      if (!banners.length && parent) banners = DEMO_BANNERS.filter((x) => x.position === 'category_top' && x.placement === parent.slug);
+      return ok({ ...withChildren(c), parent: parent ? brief(parent) : null, banners: banners.map(bannerOut) });
+    }
+    if (a === 'categories') return ok(DEMO_CATEGORIES.filter((x) => !x.parent_id).map(withChildren));
+    if (a === 'banners') {
+      const position = params.get('position');
+      return ok(DEMO_BANNERS.filter((x) => !position || x.position === position).map(bannerOut));
+    }
+    if (a === 'shops' && bSeg) {
+      const sh = DEMO_SHOPS.find((x) => x.slug === decodeURIComponent(bSeg));
+      if (!sh) return fail('این فروشگاه پیدا نشد.', 404);
+      return ok({ ...sh, product_count: DEMO_PRODUCTS.filter((p) => p.shop_id === sh.id).length });
+    }
     if (a === 'products' && bSeg) {
       const p = DEMO_PRODUCTS.find((x) => x.slug === decodeURIComponent(bSeg));
       if (!p) return fail('محصول پیدا نشد.', 404);
@@ -285,7 +311,13 @@ export const demoApi: DemoApi = async (path, method, body) => {
       const s = params.get('search');
       if (s) list = list.filter((p) => p.name.includes(s) || category(p.category_id).name.includes(s));
       const cat = params.get('category');
-      if (cat) list = list.filter((p) => category(p.category_id).slug === cat);
+      if (cat) {
+        const root = DEMO_CATEGORIES.find((x) => x.slug === cat);
+        const ids = root ? subtreeIds(root.id) : [];
+        list = list.filter((p) => ids.includes(p.category_id));
+      }
+      const shop = params.get('shop');
+      if (shop) list = list.filter((p) => DEMO_SHOPS.find((x) => x.id === p.shop_id)?.slug === shop);
       if (params.get('tryon') === 'true') list = list.filter(supportsTryon);
       if (params.get('discounted') === 'true') list = list.filter((p) => p.compare_at_price);
       const o = params.get('ordering');
