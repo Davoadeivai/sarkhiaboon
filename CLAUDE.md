@@ -8,7 +8,7 @@ Read these before doing any work:
 2. `docs/DEVELOPMENT_LOG.md` — full technical build log of the backend (Persian). **Every part you build gets a section added here**, with complete explanation (files, decisions and why, endpoints, tests, known limits). This is a standing requirement from Davoad.
 
 ## Status
-- **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 123 tests pass, live e2e journey 27 checks, OpenAPI schema clean (`--fail-on-warn`).
+- **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 129 tests pass, live e2e journey 27 checks, OpenAPI schema clean (`--fail-on-warn`).
 - **Mobile app: built** (`mobile/`, Expo SDK 58 + TypeScript + Expo Router). All screens done; full customer journey verified on the web build against the live backend (DEVELOPMENT_LOG §7). Not yet run on a physical device; push notifications and offline catalog cache not built.
 - **Store layout (Nov 2026, client request):** red entry screens; home = 3 top slides + category photo tiles + ad slides; category pages with subcategories (مانتو → مدرسه/اداری/مجلسی/راحتی) and their own sliders; products belong to registered shops (`Shop`) and open the shop page; ad slides while try-on runs; try-on results stay in-app only (no share/download, memory-only image cache). DEVELOPMENT_LOG §8.
 - **Try-on model licence:** CatVTON is CC BY-NC-SA (non-commercial). Do not deploy it for this app without written permission; candidates in PROJECT_CONTEXT.
@@ -21,7 +21,7 @@ backend/            Django project (manage.py here)
   config/           settings (all config from env vars), urls, celery
   apps/core         base model, pagination, exception handler, OptionalJWTAuthentication, testing helpers
   apps/accounts     phone + OTP login, guest users, guest→user merge (signal `guest_merged`)
-  apps/catalog      categories, products, variants, banners, home shortcuts (ad icons), favorites, seed_demo
+  apps/catalog      categories, shops, products, variants, banners, favorites, seed_demo; catalog_template + import_catalog (client Excel)
   apps/tryon        person photos, try-on jobs, swappable providers (mock / RunPod), quotas, cache
   apps/orders       cart, addresses, checkout (stock reservation), payment gateways (sandbox / Zarinpal)
   scripts/smoke_test.py   live HTTP end-to-end journey
