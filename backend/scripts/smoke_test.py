@@ -34,9 +34,23 @@ def check(label, cond, extra=""):
 
 # 1. Home screen, public
 home = requests.get(f"{B}/api/v1/catalog/home/").json()
-check("home: banners, icons, categories, products",
-      len(home["banners_top"]) == 1 and len(home["shortcuts"]) == 3 and len(home["categories"]) == 6 and len(home["new_products"]) == 10,
-      f"{len(home['banners_top'])} top banners, {len(home['shortcuts'])} icons, {len(home['categories'])} categories")
+check("home: 3 top slides, category tiles with photos, ad slides, products",
+      len(home["banners_top"]) == 3 and len(home["banners_middle"]) == 3 and len(home["categories"]) == 6
+      and all(c["image"] for c in home["categories"]) and len(home["new_products"]) == 10,
+      f"{len(home['banners_top'])} top, {len(home['banners_middle'])} ad slides, {len(home['categories'])} categories")
+manto = next(c for c in home["categories"] if c["name"].endswith("مانتو"))
+page = requests.get(f"{B}/api/v1/catalog/categories/{manto['slug']}/").json()
+check("category page: 4 subcategories + slider", len(page["children"]) == 4 and len(page["banners"]) == 3,
+      ", ".join(c["name"] for c in page["children"]))
+office = next(c for c in page["children"] if "اداری" in c["name"])
+office_products = requests.get(f"{B}/api/v1/catalog/products/", params={"category": office["slug"]}).json()["results"]
+shop = office_products[0]["shop"]
+shop_page = requests.get(f"{B}/api/v1/catalog/shops/{shop['slug']}/").json()
+shop_items = requests.get(f"{B}/api/v1/catalog/products/", params={"shop": shop["slug"]}).json()["results"]
+check("product opens its shop with the shop's other items", shop_page["product_count"] == len(shop_items) > 1,
+      f"{shop_page['name']}: {len(shop_items)} items")
+wait = requests.get(f"{B}/api/v1/catalog/banners/", params={"position": "tryon_wait"}).json()
+check("try-on waiting ads", len(wait) == 3)
 check("image URLs are absolute and load", requests.get(home["banners_top"][0]["image"]).status_code == 200)
 
 # 2. Guest session

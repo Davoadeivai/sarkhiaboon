@@ -36,6 +36,10 @@ class Category(TimeStampedModel):
         "self", verbose_name="دسته‌ی والد", null=True, blank=True, on_delete=models.CASCADE, related_name="children"
     )
     icon = models.ImageField("آیکون", upload_to="catalog/categories/", blank=True)
+    image = models.ImageField(
+        "تصویر کاشی", upload_to="catalog/categories/tiles/", blank=True,
+        help_text="عکسی که در صفحه‌ی اصلی و فهرست زیردسته‌ها روی کاشی این دسته نمایش داده می‌شود.",
+    )
     tryon_type = models.CharField(
         "نوع پرو مجازی", max_length=20, choices=TryOnType.choices, default=TryOnType.NONE,
         help_text="محصولات این دسته به‌طور پیش‌فرض با این نوع پرو می‌شوند.",
@@ -74,6 +78,32 @@ class Category(TimeStampedModel):
         return ids
 
 
+class Shop(TimeStampedModel):
+    """A registered store whose products are sold in the app (a product page opens its shop)."""
+
+    name = models.CharField("نام فروشگاه", max_length=120)
+    slug = models.SlugField("نامک", max_length=220, unique=True, allow_unicode=True, blank=True)
+    logo = models.ImageField("لوگو", upload_to="catalog/shops/", blank=True)
+    cover = models.ImageField("تصویر سربرگ", upload_to="catalog/shops/", blank=True)
+    city = models.CharField("شهر", max_length=60, blank=True)
+    description = models.TextField("معرفی کوتاه", blank=True)
+    order = models.PositiveIntegerField("ترتیب", default=0)
+    is_active = models.BooleanField("فعال", default=True)
+
+    class Meta:
+        verbose_name = "فروشگاه"
+        verbose_name_plural = "فروشگاه‌ها"
+        ordering = ("order", "name")
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = unique_slug(self, self.name)
+        super().save(*args, **kwargs)
+
+
 class ProductQuerySet(models.QuerySet):
     def visible(self):
         return self.filter(is_active=True, category__is_active=True)
@@ -83,6 +113,9 @@ class Product(TimeStampedModel):
     name = models.CharField("نام", max_length=200)
     slug = models.SlugField("نامک", max_length=220, unique=True, allow_unicode=True, blank=True)
     category = models.ForeignKey(Category, verbose_name="دسته‌بندی", on_delete=models.PROTECT, related_name="products")
+    shop = models.ForeignKey(
+        Shop, verbose_name="فروشگاه", null=True, blank=True, on_delete=models.SET_NULL, related_name="products"
+    )
     description = models.TextField("توضیحات", blank=True)
     price = models.PositiveBigIntegerField("قیمت (تومان)")
     compare_at_price = models.PositiveBigIntegerField(
@@ -221,17 +254,28 @@ class Banner(LinkTargetMixin, TimeStampedModel):
 
     class Position(models.TextChoices):
         HOME_TOP = "home_top", "بالای صفحه‌ی اصلی (اسلایدر)"
-        HOME_MIDDLE = "home_middle", "میانه‌ی صفحه‌ی اصلی"
+        HOME_MIDDLE = "home_middle", "میانه‌ی صفحه‌ی اصلی (تبلیغات)"
+        CATEGORY_TOP = "category_top", "بالای صفحه‌ی یک دسته (اسلایدر)"
+        TRYON_WAIT = "tryon_wait", "هنگام ساخت تصویر پرو (تبلیغات)"
 
     title = models.CharField("عنوان", max_length=150)
     image = models.ImageField("تصویر", upload_to="catalog/banners/")
     position = models.CharField("جایگاه", max_length=20, choices=Position.choices, default=Position.HOME_TOP)
+    placement_category = models.ForeignKey(
+        Category, verbose_name="دسته‌ی محل نمایش", null=True, blank=True, on_delete=models.CASCADE,
+        related_name="page_banners", help_text="فقط برای جایگاه «بالای صفحه‌ی یک دسته»: بنر در صفحه‌ی کدام دسته نمایش داده شود.",
+    )
     order = models.PositiveIntegerField("ترتیب", default=0)
     is_active = models.BooleanField("فعال", default=True)
     starts_at = models.DateTimeField("شروع نمایش", null=True, blank=True)
     ends_at = models.DateTimeField("پایان نمایش", null=True, blank=True)
 
     objects = ScheduledQuerySet.as_manager()
+
+    def clean(self):
+        super().clean()
+        if self.position == self.Position.CATEGORY_TOP and not self.placement_category_id:
+            raise ValidationError({"placement_category": "برای بنر صفحه‌ی دسته، دسته‌ی محل نمایش را انتخاب کنید."})
 
     class Meta:
         verbose_name = "بنر"

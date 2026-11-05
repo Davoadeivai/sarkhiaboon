@@ -1,4 +1,4 @@
-from django.db.models import Prefetch
+from django.db.models import Count, Prefetch, Q
 from drf_spectacular.utils import extend_schema, inline_serializer
 from rest_framework import generics, mixins, permissions, serializers, viewsets
 from rest_framework.response import Response
@@ -7,21 +7,23 @@ from rest_framework.views import APIView
 from apps.core.authentication import OptionalJWTAuthentication
 
 from .filters import ProductFilter
-from .models import Banner, Category, Favorite, HomeShortcut, Product, ProductVariant
+from .models import Banner, Category, Favorite, HomeShortcut, Product, ProductVariant, Shop
 from .serializers import (
     BannerSerializer,
+    CategoryPageSerializer,
     CategorySerializer,
     FavoriteSerializer,
     HomeShortcutSerializer,
     ProductDetailSerializer,
     ProductListSerializer,
+    ShopSerializer,
 )
 
 
 def _product_queryset():
     return (
         Product.objects.visible()
-        .select_related("category")
+        .select_related("category", "shop")
         .prefetch_related(
             Prefetch("variants", queryset=ProductVariant.objects.order_by("pk")),
             "images",
@@ -50,6 +52,36 @@ class CategoryListView(generics.ListAPIView):
 
     def get_queryset(self):
         return Category.objects.filter(is_active=True, parent__isnull=True).prefetch_related("children__children")
+
+
+class CategoryPageView(generics.RetrieveAPIView):
+    """
+    One category page: subcategories (with tile images) and the slider banners for that page.
+    The app shows subcategory tiles when there are children, otherwise the category's products.
+    """
+
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = (OptionalJWTAuthentication,)
+    serializer_class = CategoryPageSerializer
+    lookup_field = "slug"
+    lookup_value_regex = "[^/]+"
+
+    def get_queryset(self):
+        return Category.objects.filter(is_active=True).select_related("parent").prefetch_related("children")
+
+
+class ShopViewSet(viewsets.ReadOnlyModelViewSet):
+    """Registered shops. A shop's products: GET /catalog/products/?shop=<slug>"""
+
+    permission_classes = (permissions.AllowAny,)
+    authentication_classes = (OptionalJWTAuthentication,)
+    serializer_class = ShopSerializer
+    lookup_field = "slug"
+    lookup_value_regex = "[^/]+"
+
+    def get_queryset(self):
+        visible = Q(products__is_active=True)
+        return Shop.objects.filter(is_active=True).annotate(product_count=Count("products", filter=visible))
 
 
 class ProductViewSet(FavoriteContextMixin, viewsets.ReadOnlyModelViewSet):
@@ -85,7 +117,12 @@ class BannerListView(generics.ListAPIView):
     def get_queryset(self):
         qs = Banner.objects.live().select_related("product", "category")
         position = self.request.query_params.get("position")
-        return qs.filter(position=position) if position else qs
+        if position:
+            qs = qs.filter(position=position)
+        category = self.request.query_params.get("category")
+        if category:
+            qs = qs.filter(placement_category__slug=category)
+        return qs
 
 
 class HomeView(APIView):

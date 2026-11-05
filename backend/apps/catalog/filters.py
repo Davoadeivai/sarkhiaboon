@@ -8,6 +8,7 @@ from .models import Category, Product, ProductVariant
 
 class ProductFilter(django_filters.FilterSet):
     category = django_filters.CharFilter(method="filter_category", label="نامک دسته‌بندی (شامل زیردسته‌ها)")
+    shop = django_filters.CharFilter(field_name="shop__slug", label="نامک فروشگاه")
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
     size = django_filters.CharFilter(method="filter_size")

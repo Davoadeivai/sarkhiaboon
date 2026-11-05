@@ -7,7 +7,7 @@ from apps.accounts.models import User
 from apps.accounts.signals import guest_merged
 from apps.core.testing import APITestBase, make_image
 
-from .models import Banner, Category, Favorite, HomeShortcut, ProductVariant, TryOnType
+from .models import Banner, Category, Favorite, HomeShortcut, Product, ProductVariant, TryOnType
 from .testing import make_category, make_product
 
 
@@ -200,3 +200,104 @@ class FavoriteTests(APITestBase):
         guest_merged.send(sender=User, guest=guest, user=self.user)
         self.assertEqual(Favorite.objects.filter(user=self.user).count(), 2)
         self.assertEqual(Favorite.objects.filter(user=guest).count(), 0)
+
+
+class ShopAndCategoryPageTests(APITestBase):
+    """The client's store flow: category → subcategories (with banners) → products → shop page."""
+
+    def setUp(self):
+        super().setUp()
+        from .models import Shop
+
+        self.manto = make_category("مانتو", TryOnType.DRESSES)
+        self.office = make_category("مانتو اداری", TryOnType.DRESSES, parent=self.manto)
+        self.school = make_category("مانتو مدرسه", TryOnType.DRESSES, parent=self.manto)
+        self.lale = Shop.objects.create(name="بوتیک لاله", city="تهران")
+        self.negar = Shop.objects.create(name="مزون نگار", city="اصفهان")
+        self.p1 = make_product("مانتو اداری کرپ", category=self.office)
+        self.p1.shop = self.lale
+        self.p1.save()
+        self.p2 = make_product("مانتو مدرسه سرمه‌ای", category=self.school)
+        self.p2.shop = self.lale
+        self.p2.save()
+        self.p3 = make_product("مانتو اداری بلند", category=self.office)
+        self.p3.shop = self.negar
+        self.p3.save()
+
+    def _banner(self, title, page, **kw):
+        return Banner.objects.create(title=title, image=make_image(), position=Banner.Position.CATEGORY_TOP,
+                                     placement_category=page, **kw)
+
+    def test_category_page_lists_subcategories_with_images(self):
+        self.office.image = make_image("tile.png")
+        self.office.save()
+        resp = self.client.get(f"/api/v1/catalog/categories/{self.manto.slug}/")
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual([c["name"] for c in resp.data["children"]], ["مانتو اداری", "مانتو مدرسه"])
+        self.assertTrue(resp.data["children"][0]["image"].startswith("http://"))
+        self.assertIsNone(resp.data["parent"])
+
+    def test_category_page_banners_and_parent_fallback(self):
+        self._banner("اسلاید ۱", self.office, order=0)
+        self._banner("اسلاید ۲", self.office, order=1)
+        self._banner("اسلاید مانتو", self.manto)
+        office = self.client.get(f"/api/v1/catalog/categories/{self.office.slug}/").data
+        self.assertEqual([b["title"] for b in office["banners"]], ["اسلاید ۱", "اسلاید ۲"])
+        self.assertEqual(office["parent"]["slug"], self.manto.slug)
+        # The school page has no banners of its own, so it shows the parent's slider.
+        school = self.client.get(f"/api/v1/catalog/categories/{self.school.slug}/").data
+        self.assertEqual([b["title"] for b in school["banners"]], ["اسلاید مانتو"])
+
+    def test_expired_category_banner_hidden(self):
+        self._banner("گذشته", self.office, ends_at=timezone.now() - timedelta(days=1))
+        self.assertEqual(self.client.get(f"/api/v1/catalog/categories/{self.office.slug}/").data["banners"], [])
+
+    def test_category_banner_requires_page(self):
+        b = Banner(title="بی‌جا", image=make_image(), position=Banner.Position.CATEGORY_TOP)
+        with self.assertRaises(ValidationError):
+            b.full_clean()
+
+    def test_tryon_wait_banners_by_position(self):
+        Banner.objects.create(title="تبلیغ انتظار", image=make_image(), position=Banner.Position.TRYON_WAIT)
+        resp = self.client.get("/api/v1/catalog/banners/", {"position": "tryon_wait"})
+        self.assertEqual([b["title"] for b in resp.data], ["تبلیغ انتظار"])
+
+    def test_products_carry_their_shop(self):
+        detail = self.client.get(f"/api/v1/catalog/products/{self.p1.slug}/").data
+        self.assertEqual(detail["shop"]["slug"], self.lale.slug)
+        self.assertEqual(detail["shop"]["city"], "تهران")
+
+    def test_shop_page_and_its_products(self):
+        shop = self.client.get(f"/api/v1/catalog/shops/{self.lale.slug}/").data
+        self.assertEqual(shop["name"], "بوتیک لاله")
+        self.assertEqual(shop["product_count"], 2)
+        names = {p["name"] for p in self.client.get("/api/v1/catalog/products/", {"shop": self.lale.slug}).data["results"]}
+        self.assertEqual(names, {"مانتو اداری کرپ", "مانتو مدرسه سرمه‌ای"})
+        # Same shop, same category: "other office mantos from this shop".
+        same = self.client.get("/api/v1/catalog/products/", {"shop": self.negar.slug, "category": self.office.slug}).data
+        self.assertEqual([p["name"] for p in same["results"]], ["مانتو اداری بلند"])
+
+    def test_inactive_shop_hidden(self):
+        self.negar.is_active = False
+        self.negar.save()
+        self.assertEqual(self.client.get(f"/api/v1/catalog/shops/{self.negar.slug}/").status_code, 404)
+
+    def test_seed_demo_builds_the_store_layout(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from .models import Shop
+
+        call_command("seed_demo", stdout=StringIO())
+        manto = Category.objects.get(name="[نمونه] مانتو")
+        self.assertEqual(
+            sorted(c.name for c in manto.children.all()),
+            sorted(f"[نمونه] {n}" for n in ("مانتو مدرسه", "مانتو اداری", "مانتو مجلسی", "مانتو راحتی")),
+        )
+        self.assertEqual(Shop.objects.filter(name__startswith="[نمونه]").count(), 3)
+        self.assertEqual(Banner.objects.filter(position=Banner.Position.HOME_TOP, title__startswith="[نمونه]").count(), 3)
+        self.assertEqual(Banner.objects.filter(position=Banner.Position.TRYON_WAIT, title__startswith="[نمونه]").count(), 3)
+        office = Category.objects.get(name="[نمونه] مانتو اداری")
+        self.assertEqual(office.page_banners.count(), 3)
+        self.assertTrue(Product.objects.filter(category=office).exclude(shop=None).exists())

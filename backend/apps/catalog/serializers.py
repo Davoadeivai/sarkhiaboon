@@ -4,16 +4,17 @@ from rest_framework import serializers
 from apps.core.fields import MediaURLField
 from apps.tryon.providers import available_tryon_types
 
-from .models import Banner, Category, Favorite, HomeShortcut, Product, ProductImage, ProductVariant
+from .models import Banner, Category, Favorite, HomeShortcut, Product, ProductImage, ProductVariant, Shop
 
 
 class CategorySerializer(serializers.ModelSerializer):
     icon = MediaURLField(read_only=True)
+    image = MediaURLField(read_only=True)
     children = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
-        fields = ("id", "name", "slug", "icon", "tryon_type", "children")
+        fields = ("id", "name", "slug", "icon", "image", "tryon_type", "children")
 
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
     def get_children(self, obj) -> list:
@@ -23,10 +24,27 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class CategoryBriefSerializer(serializers.ModelSerializer):
     icon = MediaURLField(read_only=True)
+    image = MediaURLField(read_only=True)
 
     class Meta:
         model = Category
-        fields = ("id", "name", "slug", "icon")
+        fields = ("id", "name", "slug", "icon", "image")
+
+
+class ShopBriefSerializer(serializers.ModelSerializer):
+    logo = MediaURLField(read_only=True)
+
+    class Meta:
+        model = Shop
+        fields = ("id", "name", "slug", "logo", "city")
+
+
+class ShopSerializer(ShopBriefSerializer):
+    cover = MediaURLField(read_only=True)
+    product_count = serializers.IntegerField(read_only=True)
+
+    class Meta(ShopBriefSerializer.Meta):
+        fields = ShopBriefSerializer.Meta.fields + ("cover", "description", "product_count")
 
 
 class ProductVariantSerializer(serializers.ModelSerializer):
@@ -60,6 +78,7 @@ class _FavoriteFlagMixin(serializers.Serializer):
 class ProductListSerializer(_FavoriteFlagMixin, serializers.ModelSerializer):
     image = MediaURLField(read_only=True)
     category = CategoryBriefSerializer(read_only=True)
+    shop = ShopBriefSerializer(read_only=True)
     supports_tryon = serializers.SerializerMethodField()
     discount_percent = serializers.IntegerField(read_only=True)
     in_stock = serializers.SerializerMethodField()
@@ -68,7 +87,7 @@ class ProductListSerializer(_FavoriteFlagMixin, serializers.ModelSerializer):
         model = Product
         fields = (
             "id", "name", "slug", "image", "price", "compare_at_price", "discount_percent",
-            "category", "supports_tryon", "in_stock", "is_favorite",
+            "category", "shop", "supports_tryon", "in_stock", "is_favorite",
         )
 
     def get_supports_tryon(self, obj) -> bool:
@@ -134,3 +153,28 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = Favorite
         fields = ("id", "product", "product_id", "created_at")
         read_only_fields = ("id", "created_at")
+
+
+class CategoryPageSerializer(CategorySerializer):
+    """One category page: its subcategories, its slider banners and where it sits in the tree."""
+
+    parent = CategoryBriefSerializer(read_only=True)
+    banners = serializers.SerializerMethodField()
+
+    class Meta(CategorySerializer.Meta):
+        fields = CategorySerializer.Meta.fields + ("parent", "banners")
+
+    @extend_schema_field(BannerSerializer(many=True))
+    def get_banners(self, obj):
+        # A subcategory without its own banners shows its parent's, so every page has a slider.
+        node = obj
+        while node is not None:
+            banners = list(
+                Banner.objects.live()
+                .filter(position=Banner.Position.CATEGORY_TOP, placement_category=node)
+                .select_related("product", "category")
+            )
+            if banners:
+                return BannerSerializer(banners, many=True, context=self.context).data
+            node = node.parent
+        return []
