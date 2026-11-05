@@ -8,11 +8,11 @@ Read these before doing any work:
 2. `docs/DEVELOPMENT_LOG.md` — full technical build log of the backend (Persian). **Every part you build gets a section added here**, with complete explanation (files, decisions and why, endpoints, tests, known limits). This is a standing requirement from Davoad.
 
 ## Status
-- **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 114 tests pass, live e2e journey 24/24, OpenAPI schema clean (`--fail-on-warn`).
+- **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 123 tests pass, live e2e journey 27 checks, OpenAPI schema clean (`--fail-on-warn`).
 - **Mobile app: built** (`mobile/`, Expo SDK 58 + TypeScript + Expo Router). All screens done; full customer journey verified on the web build against the live backend (DEVELOPMENT_LOG §7). Not yet run on a physical device; push notifications and offline catalog cache not built.
 - **Store layout (Nov 2026, client request):** red entry screens; home = 3 top slides + category photo tiles + ad slides; category pages with subcategories (مانتو → مدرسه/اداری/مجلسی/راحتی) and their own sliders; products belong to registered shops (`Shop`) and open the shop page; ad slides while try-on runs; try-on results stay in-app only (no share/download, memory-only image cache). DEVELOPMENT_LOG §8.
 - **Try-on model licence:** CatVTON is CC BY-NC-SA (non-commercial). Do not deploy it for this app without written permission; candidates in PROJECT_CONTEXT.
-- **Next:** (a) run the app on real Android/iOS devices, (b) GPU worker: CatVTON Docker image for RunPod Serverless, (c) client-doc updates once path 2 is confirmed (see PROJECT_CONTEXT).
+- **Next:** (a) run the app on real Android/iOS devices, (b) GPU worker for RunPod Serverless once the model licence is decided (see PROJECT_CONTEXT), (c) client-doc updates once price, payment terms and scope are confirmed.
 - Not yet done: Docker stack never actually run; RunPod / Kavenegar / Zarinpal only tested against mocked HTTP; blur threshold needs calibration on real photos; shoes unsupported by engine.
 
 ## Layout
