@@ -1,5 +1,6 @@
 import { useAuth } from './auth';
 import { demoApi } from './demo/runtime';
+import { useConnection } from './offline';
 import type { AuthResponse } from './types';
 
 export const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'http://127.0.0.1:8000').replace(/\/$/, '');
@@ -57,8 +58,11 @@ async function rawRequest(path: string, opts: RequestOptions, token: string | nu
   }
   if (token && !opts.anonymous) headers.Authorization = `Bearer ${token}`;
   try {
-    return await fetch(`${API_URL}/api/v1${path}`, { method: opts.method ?? 'GET', headers, body });
+    const res = await fetch(`${API_URL}/api/v1${path}`, { method: opts.method ?? 'GET', headers, body });
+    useConnection.getState().set(false);
+    return res;
   } catch {
+    useConnection.getState().set(true);
     throw new ApiError(NETWORK_MESSAGE, 0, 'network');
   }
 }

@@ -8,6 +8,7 @@ import type { ApiError } from '@/lib/api';
 import { toman } from '@/lib/format';
 import { payOrder } from '@/lib/payment';
 import { useAddresses, useCart, useCheckout, useCreateAddress } from '@/lib/queries';
+import { registerForPush } from '@/lib/push';
 import type { Address } from '@/lib/types';
 import { colors, radius, space } from '@/theme/tokens';
 
@@ -71,6 +72,7 @@ export default function CheckoutScreen() {
     setPaying(true);
     try {
       const order = await checkout.mutateAsync({ addressId: selected, note });
+      registerForPush(true); // shipping updates
       await payOrder(order.number);
     } catch (e) {
       setError((e as Error).message);

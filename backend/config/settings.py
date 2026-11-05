@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     "apps.catalog",
     "apps.tryon",
     "apps.orders",
+    "apps.notifications",
 ]
 
 MIDDLEWARE = [
@@ -173,6 +174,9 @@ REST_FRAMEWORK = {
         "guest_login": env("THROTTLE_GUEST_LOGIN", "10/hour"),
     },
     "EXCEPTION_HANDLER": "apps.core.exceptions.api_exception_handler",
+    # Behind nginx set TRUSTED_PROXY_COUNT=1 so throttling keys on the real
+    # client IP (last X-Forwarded-For hop) and a client cannot spoof it.
+    "NUM_PROXIES": env_int("TRUSTED_PROXY_COUNT", 0) or None,
 }
 
 SIMPLE_JWT = {
@@ -279,6 +283,12 @@ TRYON = {
 # ---------------------------------------------------------------------------
 # Payments
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Push notifications (swappable: LogPushBackend in development)
+# ---------------------------------------------------------------------------
+PUSH_BACKEND = env("PUSH_BACKEND", "apps.notifications.backends.LogPushBackend")
+EXPO_PUSH_ACCESS_TOKEN = env("EXPO_PUSH_ACCESS_TOKEN", "")
+
 PAYMENT_GATEWAY = env("PAYMENT_GATEWAY", "apps.orders.gateways.SandboxGateway")
 ZARINPAL_MERCHANT_ID = env("ZARINPAL_MERCHANT_ID", "")
 ZARINPAL_SANDBOX = env_bool("ZARINPAL_SANDBOX", True)

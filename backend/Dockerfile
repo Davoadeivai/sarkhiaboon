@@ -11,7 +11,9 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+# Iranian servers: pass a PyPI mirror (see docs/DEPLOY.md)
+ARG PIP_INDEX_URL=https://pypi.org/simple
+RUN pip install --index-url "$PIP_INDEX_URL" -r requirements.txt
 
 COPY . .
 

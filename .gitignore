@@ -7,3 +7,6 @@ backend/staticfiles/
 .venv/
 .idea/
 .vscode/
+
+# production backups
+deploy/backups/

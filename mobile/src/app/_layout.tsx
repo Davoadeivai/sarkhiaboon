@@ -1,6 +1,7 @@
 import { Lalezar_400Regular } from '@expo-google-fonts/lalezar';
 import { Vazirmatn_400Regular, Vazirmatn_500Medium, Vazirmatn_700Bold } from '@expo-google-fonts/vazirmatn';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,10 +10,13 @@ import { useEffect, useState } from 'react';
 import { I18nManager, Platform, View } from 'react-native';
 
 import { Intro } from '@/components/Intro';
+import { OfflineBar } from '@/components/OfflineBar';
 import { ErrorState } from '@/components/ui';
 import { ApiError, startGuestSession } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { demoFonts } from '@/lib/demo/runtime';
+import { CATALOG_CACHE_AGE, persistOptions } from '@/lib/offline';
+import { PushBridge } from '@/lib/push';
 import { colors } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -32,6 +36,8 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60_000,
+      // Kept long enough for the saved offline catalog to be restored (lib/offline.ts)
+      gcTime: CATALOG_CACHE_AGE,
       retry: (count, error) => !(error instanceof ApiError && error.status >= 400 && error.status < 500) && count < 2,
     },
   },
@@ -71,7 +77,7 @@ export default function RootLayout() {
           <ErrorState message={bootError} onRetry={startGuest} />
         </View>
       ) : booted ? (
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
           <StatusBar style="dark" />
           <Stack
             screenOptions={{
@@ -82,7 +88,9 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="login" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
           </Stack>
-        </QueryClientProvider>
+          <OfflineBar />
+          <PushBridge />
+        </PersistQueryClientProvider>
       ) : null}
       <Intro ready={booted} />
     </View>

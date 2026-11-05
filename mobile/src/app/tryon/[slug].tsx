@@ -13,6 +13,7 @@ import { demoPerson } from '@/lib/demo/runtime';
 import { faDigits } from '@/lib/format';
 import { photoForm, pickImage, type PickedImage } from '@/lib/media';
 import { useBanners, useCreateJob, usePhotos, useProduct, useQuota, useUploadPhoto } from '@/lib/queries';
+import { registerForPush } from '@/lib/push';
 import { colors, GUTTER, space } from '@/theme/tokens';
 
 const TIPS: { icon: IconName; title: string; body: string }[] = [
@@ -67,6 +68,7 @@ export default function TryOnStart() {
       }
       const job = await createJob.mutateAsync({ productId: product.data.id, photoId });
       router.replace({ pathname: '/tryon/job/[id]', params: { id: job.id, preview } });
+      registerForPush(true); // the natural moment to ask: "tell me when it's ready"
     } catch (e) {
       setError((e as Error).message);
     }

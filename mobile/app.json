@@ -63,7 +63,20 @@
           "cameraPermission": "برای گرفتن عکس پرو مجازی به دوربین نیاز داریم.",
           "photosPermission": "برای انتخاب عکس پرو مجازی از گالری به دسترسی عکس‌ها نیاز داریم."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#B3261E",
+          "defaultChannel": "default",
+          "icon": "./assets/notification-icon.png"
+        }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
   }
 }

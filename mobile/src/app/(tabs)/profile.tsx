@@ -10,6 +10,8 @@ import { Button, Card, Field, Notice, T } from '@/components/ui';
 import { startGuestSession } from '@/lib/api';
 import { isGuest, useAuth } from '@/lib/auth';
 import { faPhone } from '@/lib/format';
+import { clearCatalogCache } from '@/lib/offline';
+import { unregisterPush } from '@/lib/push';
 import { useUpdateMe } from '@/lib/queries';
 import { colors, GUTTER, radius, space } from '@/theme/tokens';
 
@@ -52,8 +54,10 @@ export default function ProfileScreen() {
   }, [user?.first_name, user?.last_name]);
 
   const logout = async () => {
+    await unregisterPush(); // while the old session can still authenticate
     await clear();
     qc.clear();
+    await clearCatalogCache();
     await startGuestSession().catch(() => {});
     router.replace('/');
   };

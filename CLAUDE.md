@@ -8,12 +8,14 @@ Read these before doing any work:
 2. `docs/DEVELOPMENT_LOG.md` — full technical build log of the backend (Persian). **Every part you build gets a section added here**, with complete explanation (files, decisions and why, endpoints, tests, known limits). This is a standing requirement from Davoad.
 
 ## Status
-- **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 129 tests pass, live e2e journey 27 checks, OpenAPI schema clean (`--fail-on-warn`).
-- **Mobile app: built** (`mobile/`, Expo SDK 58 + TypeScript + Expo Router). All screens done; full customer journey verified on the web build against the live backend (DEVELOPMENT_LOG §7). Not yet run on a physical device; push notifications and offline catalog cache not built.
+- **Backend: done and verified** (Django API — accounts, catalog, try-on, orders/payment). 139 tests pass (also on PostgreSQL 16), live e2e journey 27 checks (also behind nginx/HTTPS with real Celery), OpenAPI schema clean (`--fail-on-warn`).
+- **Mobile app: built** (`mobile/`, Expo SDK 58 + TypeScript + Expo Router). All screens done; full customer journey verified on the web build against the live backend (DEVELOPMENT_LOG §7). Push notifications (`apps/notifications`, `lib/push.ts`) and offline catalog cache (`lib/offline.ts`) built (DEVELOPMENT_LOG §11–12). Not yet run on a physical device; push needs `extra.eas.projectId` in app.json.
 - **Store layout (Nov 2026, client request):** red entry screens; home = 3 top slides + category photo tiles + ad slides; category pages with subcategories (مانتو → مدرسه/اداری/مجلسی/راحتی) and their own sliders; products belong to registered shops (`Shop`) and open the shop page; ad slides while try-on runs; try-on results stay in-app only (no share/download, memory-only image cache). DEVELOPMENT_LOG §8.
 - **Try-on model licence:** CatVTON is CC BY-NC-SA (non-commercial). Do not deploy it for this app without written permission; candidates in PROJECT_CONTEXT.
+- **Production deploy:** `deploy/` (compose prod, nginx, certbot, backups) + Persian guide `docs/DEPLOY.md` (§10). Use `select_for_update(of=("self",))` whenever the query has `select_related` on a nullable FK (PostgreSQL rejects it; SQLite hides it).
+- **Client (Nov 2026):** already has Enamad, SMS panel, a **direct bank gateway** (not Zarinpal), domain and server. Pending: bank name and SMS provider → new classes in `orders/gateways.py` / `accounts/sms.py`.
 - **Next:** (a) run the app on real Android/iOS devices, (b) GPU worker for RunPod Serverless once the model licence is decided (see PROJECT_CONTEXT), (c) client-doc updates once price, payment terms and scope are confirmed.
-- Not yet done: Docker stack never actually run; RunPod / Kavenegar / Zarinpal only tested against mocked HTTP; blur threshold needs calibration on real photos; shoes unsupported by engine.
+- Not yet done: Docker images never built (Docker Hub unreachable here; config verified without Docker); RunPod / Kavenegar / Zarinpal only tested against mocked HTTP; blur threshold needs calibration on real photos; shoes unsupported by engine.
 
 ## Layout
 ```
@@ -24,9 +26,11 @@ backend/            Django project (manage.py here)
   apps/catalog      categories, shops, products, variants, banners, favorites, seed_demo; catalog_template + import_catalog (client Excel)
   apps/tryon        person photos, try-on jobs, swappable providers (mock / RunPod), quotas, cache
   apps/orders       cart, addresses, checkout (stock reservation), payment gateways (sandbox / Zarinpal)
+  apps/notifications push devices + swappable PUSH_BACKEND (log / Expo); pushes on try-on finished and order status
   scripts/smoke_test.py   live HTTP end-to-end journey
 mobile/             Expo app (src/app = screens, src/components, src/lib, src/theme); scripts/web_journey.py = e2e check
-docs/               DEVELOPMENT_LOG.md, PROJECT_CONTEXT.md, client/ (proposals, roadmap, contract — PDF+DOCX)
+deploy/             production compose, nginx template, init-ssl.sh, prod.sh, backup.sh
+docs/               DEVELOPMENT_LOG.md, PROJECT_CONTEXT.md, DEPLOY.md, client/ (proposals, roadmap, contract — PDF+DOCX)
 tools/docs/         scripts used to generate the Persian RTL client documents
 ```
 
@@ -41,13 +45,13 @@ python manage.py test                                   # must stay green
 python manage.py spectacular --file schema.yml --validate --fail-on-warn
 python scripts/smoke_test.py --base http://127.0.0.1:8000 --log server.log
 ```
-Full stack: `cp .env.example .env && docker compose up --build` (api, worker, beat, postgres, redis).
+Full stack (dev): `cp .env.example .env && docker compose up --build`. Production: `./deploy/init-ssl.sh` once, then `./deploy/prod.sh up -d --build` (docs/DEPLOY.md).
 
 ## Conventions (keep them)
 - Python 3.11, Django 5.1, DRF, simplejwt, Celery+Redis. PostgreSQL if `POSTGRES_DB` set, else SQLite.
 - API under `/api/v1/`. Code identifiers/comments in English; every user-facing message in Persian.
 - No secrets in code — everything via env vars; add new ones to `.env.example`.
-- External services are **swappable by dotted path in settings**: `TRYON["PROVIDER"]`, `SMS_BACKEND`, `PAYMENT_GATEWAY`. Add new engines as new classes, don't branch inside existing ones.
+- External services are **swappable by dotted path in settings**: `TRYON["PROVIDER"]`, `SMS_BACKEND`, `PAYMENT_GATEWAY`, `PUSH_BACKEND`. Add new engines as new classes, don't branch inside existing ones.
 - Prices are integer **Toman**; Zarinpal receives Rial (×10).
 - Tests use `apps.core.testing.APITestBase` (clears cache, patches throttle rates, temp MEDIA_ROOT), `EagerCeleryMixin`, `tryon_settings(...)`, catalog factories in `apps/catalog/testing.py`. Add tests with every feature; run the full suite and the schema check before calling anything done.
 - Privacy: person photos stripped of EXIF/GPS, random filenames, auto-deleted (`PERSON_PHOTO_RETENTION_HOURS`), never previewed in admin.

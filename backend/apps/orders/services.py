@@ -84,7 +84,13 @@ def checkout(user, address, note=""):
     if address.user_id != user.pk:
         raise OrderError("نشانی پیدا نشد.", code="address_not_found", status=404)
 
-    items = list(CartItem.objects.filter(user=user).select_related("variant__product__category").select_for_update())
+    # Lock only the cart rows (PostgreSQL refuses FOR UPDATE on the nullable
+    # category join); stock itself is taken with a conditional UPDATE below.
+    items = list(
+        CartItem.objects.filter(user=user)
+        .select_related("variant__product__category")
+        .select_for_update(of=("self",))
+    )
     if not items:
         raise OrderError("سبد خرید خالی است.", code="empty_cart")
 

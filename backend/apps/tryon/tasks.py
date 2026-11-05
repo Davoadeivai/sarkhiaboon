@@ -44,7 +44,8 @@ def _maybe_delete_photo(job):
 @shared_task(bind=True, acks_late=True)
 def process_tryon_job(self, job_id):
     with transaction.atomic():
-        job = TryOnJob.objects.select_for_update().select_related("person_photo", "product__category").filter(pk=job_id).first()
+        # of=("self",): PostgreSQL cannot lock the nullable side of the joins
+        job = TryOnJob.objects.select_for_update(of=("self",)).select_related("person_photo", "product__category").filter(pk=job_id).first()
         if job is None or job.is_finished:
             return  # deleted, or already handled by a duplicate delivery
         if job.person_photo is None:

@@ -1,0 +1,134 @@
+# Production stack for the client's server: nginx (HTTPS) → gunicorn API,
+# Celery worker + beat, PostgreSQL, Redis, Let's Encrypt renewal, nightly backups.
+#
+# Run from the repository root:
+#   cp .env.example .env            # fill in (DOMAIN, LETSENCRYPT_EMAIL, secrets…)
+#   ./deploy/init-ssl.sh            # first time only: gets the HTTPS certificate
+#   docker compose -f deploy/docker-compose.prod.yml up -d --build
+# Full guide (Persian): docs/DEPLOY.md
+name: sarkhiaboon
+
+x-app: &app
+  build:
+    context: ../backend
+    args:
+      # Iranian servers usually cannot reach pypi.org directly; set a mirror in .env
+      PIP_INDEX_URL: ${PIP_INDEX_URL:-https://pypi.org/simple}
+  image: sarkhiaboon-backend
+  env_file: ../.env
+  restart: unless-stopped
+  volumes:
+    - media:/app/media
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_started
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --save 60 1 --appendonly no
+    volumes:
+      - redisdata:/data
+
+  api:
+    <<: *app
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000
+             --workers ${GUNICORN_WORKERS:-3} --timeout 60
+             --access-logfile - --forwarded-allow-ips='*'"
+    volumes:
+      - media:/app/media
+      - static:/app/staticfiles
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    # Not published: only nginx talks to the API.
+    expose: ["8000"]
+
+  worker:
+    <<: *app
+    # Try-on jobs mostly wait on the GPU provider; keep concurrency modest
+    command: celery -A config worker -l info --concurrency ${CELERY_CONCURRENCY:-4}
+
+  beat:
+    <<: *app
+    command: celery -A config beat -l info --schedule /tmp/celerybeat-schedule
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN}
+      API_UPSTREAM: api:8000
+      STATIC_ROOT: /srv/static
+      MEDIA_ROOT: /srv/media
+      CERT_DIR: /etc/letsencrypt/live/${DOMAIN}
+      ACME_ROOT: /var/www/certbot
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - static:/srv/static:ro
+      - media:/srv/media:ro
+      - certs:/etc/letsencrypt
+      - acme:/var/www/certbot
+    depends_on: [api]
+    # Pick up renewed certificates
+    command: /bin/sh -c "while :; do sleep 6h; nginx -s reload; done & exec /docker-entrypoint.sh nginx -g 'daemon off;'"
+
+  certbot:
+    image: certbot/certbot:v3.1.0
+    restart: unless-stopped
+    volumes:
+      - certs:/etc/letsencrypt
+      - acme:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
+
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      PGHOST: db
+      PGDATABASE: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_HOUR: ${BACKUP_HOUR:-3}
+    volumes:
+      - ./backup.sh:/backup.sh:ro
+      - media:/media:ro
+      - ${BACKUP_DIR:-./backups}:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "/backup.sh", "--loop"]
+
+volumes:
+  pgdata:
+  redisdata:
+  media:
+  static:
+  certs:
+  acme:
