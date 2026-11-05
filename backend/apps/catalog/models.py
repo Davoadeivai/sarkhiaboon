@@ -111,6 +111,10 @@ class ProductQuerySet(models.QuerySet):
 
 class Product(TimeStampedModel):
     name = models.CharField("نام", max_length=200)
+    code = models.CharField(
+        "کد محصول", max_length=40, unique=True, null=True, blank=True,
+        help_text="کد خود فروشگاه (مثلاً M-101)؛ برای ورود گروهی از فایل اکسل استفاده می‌شود.",
+    )
     slug = models.SlugField("نامک", max_length=220, unique=True, allow_unicode=True, blank=True)
     category = models.ForeignKey(Category, verbose_name="دسته‌بندی", on_delete=models.PROTECT, related_name="products")
     shop = models.ForeignKey(

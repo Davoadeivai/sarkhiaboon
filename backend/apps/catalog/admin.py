@@ -68,11 +68,11 @@ class ProductAdmin(admin.ModelAdmin):
     list_display_links = ("image_preview", "name")
     list_editable = ("price", "is_active")
     list_filter = ("is_active", "tryon_enabled", "shop", "category")
-    search_fields = ("name", "description", "variants__sku")
+    search_fields = ("name", "code", "description", "variants__sku")
     autocomplete_fields = ("category", "shop")
     inlines = (ProductVariantInline, ProductImageInline)
     fieldsets = (
-        (None, {"fields": ("name", "slug", "shop", "category", "description")}),
+        (None, {"fields": ("name", "code", "slug", "shop", "category", "description")}),
         ("قیمت", {"fields": ("price", "compare_at_price")}),
         ("تصاویر", {"fields": ("image", "garment_image")}),
         ("پرو مجازی", {"fields": ("tryon_enabled", "tryon_type")}),
