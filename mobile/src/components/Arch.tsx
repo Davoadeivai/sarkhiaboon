@@ -132,6 +132,7 @@ export function Mirror({
             source={{ uri }}
             style={{ width: innerW, height: innerH, opacity: dim ? 0.55 : 1 }}
             contentFit="cover"
+            cachePolicy="memory"
             transition={400}
             accessibilityLabel={label}
             accessible={!!label}

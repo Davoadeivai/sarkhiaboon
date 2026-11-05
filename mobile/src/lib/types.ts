@@ -23,6 +23,21 @@ export interface CategoryBrief {
   name: string;
   slug: string;
   icon: string | null;
+  image: string | null;
+}
+
+export interface ShopBrief {
+  id: number;
+  name: string;
+  slug: string;
+  logo: string | null;
+  city: string;
+}
+
+export interface Shop extends ShopBrief {
+  cover: string | null;
+  description: string;
+  product_count: number;
 }
 
 export interface Category extends CategoryBrief {
@@ -39,6 +54,7 @@ export interface ProductListItem {
   compare_at_price: number | null;
   discount_percent: number;
   category: CategoryBrief;
+  shop: ShopBrief | null;
   supports_tryon: boolean;
   in_stock: boolean;
   is_favorite: boolean;
@@ -71,8 +87,13 @@ export interface Banner {
   id: number;
   title: string;
   image: string;
-  position: 'home_top' | 'home_middle';
+  position: 'home_top' | 'home_middle' | 'category_top' | 'tryon_wait';
   link: Link;
+}
+
+export interface CategoryPage extends Category {
+  parent: CategoryBrief | null;
+  banners: Banner[];
 }
 
 export interface Shortcut {

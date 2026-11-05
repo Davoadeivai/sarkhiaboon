@@ -1,6 +1,4 @@
-import { File, Paths } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 export interface PickedImage {
@@ -8,6 +6,9 @@ export interface PickedImage {
   name: string;
   type: string;
 }
+
+// Try-on results are deliberately never written to the phone (no share/download): the client
+// asked that they stay inside the app, for the shopper's trust.
 
 /** Open the camera or the gallery. Returns null if the user cancels or denies permission. */
 export async function pickImage(source: 'camera' | 'library'): Promise<PickedImage | { denied: true } | null> {
@@ -39,22 +40,4 @@ export async function photoForm(img: PickedImage): Promise<FormData> {
     form.append('image', { uri: img.uri, name: img.name, type: img.type } as unknown as Blob);
   }
   return form;
-}
-
-/** Share a try-on result to WhatsApp, Telegram, Instagram… via the system share sheet. */
-export async function shareImage(url: string, title: string): Promise<void> {
-  if (Platform.OS === 'web') {
-    const nav = globalThis.navigator as Navigator | undefined;
-    if (nav?.share) {
-      await nav.share({ title, url }).catch(() => {});
-    } else {
-      globalThis.open?.(url, '_blank');
-    }
-    return;
-  }
-  const name = url.split('/').pop()?.split('?')[0] || 'sarkhiaboon.png';
-  const file = await File.downloadFileAsync(url, new File(Paths.cache, name), { idempotent: true });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(file.uri, { mimeType: 'image/png', dialogTitle: title });
-  }
 }

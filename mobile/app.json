@@ -18,7 +18,7 @@
     "android": {
       "package": "ir.sarkhiaboon.app",
       "adaptiveIcon": {
-        "backgroundColor": "#0E7C7B",
+        "backgroundColor": "#B3261E",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -45,7 +45,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#F2F3F6",
+          "backgroundColor": "#B3261E",
           "image": "./assets/splash-icon.png",
           "imageWidth": 160
         }

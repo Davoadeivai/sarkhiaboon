@@ -32,7 +32,7 @@ export default function ClosetScreen() {
     >
       <Arch width={cardW} height={cardH} background={colors.line}>
         {item.result_image ? (
-          <Image source={{ uri: item.result_image }} style={{ width: cardW, height: cardH }} contentFit="cover" transition={200} />
+          <Image source={{ uri: item.result_image }} style={{ width: cardW, height: cardH }} contentFit="cover" cachePolicy="memory" transition={200} />
         ) : (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <T variant="smallStrong" color={colors.mute}>

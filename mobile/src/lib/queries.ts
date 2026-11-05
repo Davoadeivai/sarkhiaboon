@@ -6,7 +6,9 @@ import type {
   Address,
   AuthResponse,
   Cart,
+  Banner,
   Category,
+  CategoryPage,
   HomePayload,
   Order,
   Paginated,
@@ -14,6 +16,7 @@ import type {
   ProductDetail,
   ProductListItem,
   Quota,
+  Shop,
   TryOnJob,
   User,
 } from './types';
@@ -42,9 +45,20 @@ export const useHome = () => useQuery({ queryKey: keys.home, queryFn: () => api<
 export const useCategories = () =>
   useQuery({ queryKey: keys.categories, queryFn: () => api<Category[]>('/catalog/categories/'), staleTime: 10 * 60_000 });
 
+export const useCategoryPage = (slug: string) =>
+  useQuery({ queryKey: ['categoryPage', slug], queryFn: () => api<CategoryPage>(`/catalog/categories/${encodeURIComponent(slug)}/`) });
+
+export const useShop = (slug: string) =>
+  useQuery({ queryKey: ['shop', slug], queryFn: () => api<Shop>(`/catalog/shops/${encodeURIComponent(slug)}/`) });
+
+/** Ad slides for one placement (e.g. tryon_wait: shown while the try-on image is being made). */
+export const useBanners = (position: Banner['position']) =>
+  useQuery({ queryKey: ['banners', position], queryFn: () => api<Banner[]>(`/catalog/banners/?position=${position}`), staleTime: 5 * 60_000 });
+
 export interface ProductFilters {
   search?: string;
   category?: string;
+  shop?: string;
   tryon?: boolean;
   discounted?: boolean;
   in_stock?: boolean;
@@ -60,7 +74,11 @@ export const useProducts = (filters: ProductFilters) =>
   });
 
 export const useProduct = (slug: string) =>
-  useQuery({ queryKey: keys.product(slug), queryFn: () => api<ProductDetail>(`/catalog/products/${encodeURIComponent(slug)}/`) });
+  useQuery({
+    queryKey: keys.product(slug),
+    queryFn: () => api<ProductDetail>(`/catalog/products/${encodeURIComponent(slug)}/`),
+    enabled: !!slug,
+  });
 
 export const useFavorites = () =>
   useQuery({

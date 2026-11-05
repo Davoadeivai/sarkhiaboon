@@ -3,12 +3,13 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { type ComponentRef, useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StatusBar } from 'expo-status-bar';
 
 import { Arch } from '@/components/Arch';
 import { Button, Field, IconButton, Notice, T } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { DEMO } from '@/lib/demo/runtime';
-import { enDigits, faDigits, faPhone } from '@/lib/format';
+import { enDigits, faDigits, faPhone, ltr } from '@/lib/format';
 import { requestOtp, verifyOtp } from '@/lib/queries';
 import { colors, fonts, GUTTER, radius, space } from '@/theme/tokens';
 
@@ -69,15 +70,27 @@ export default function LoginScreen() {
   };
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.porcelain }}>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.anar }}>
+      <StatusBar style="light" />
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingTop: insets.top + space.md, paddingHorizontal: GUTTER, paddingBottom: space.xxl, gap: space.xl }}>
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
           <IconButton name="close" label="بستن" onPress={() => router.back()} />
         </View>
 
-        <View style={{ alignItems: 'center', gap: space.md }}>
-          <Arch width={84} height={110} background={colors.firouzeh} />
-          <T variant="title" center accessibilityRole="header">
+        {/* Red entry screen with the logo, as the client asked. */}
+        <View style={{ alignItems: 'center', gap: space.sm, paddingVertical: space.lg }}>
+          <Arch width={44} height={64} bottomRadius={0} background="#FFFFFF" />
+          <T variant="hero" color="#FFFFFF" center style={{ fontSize: 52, lineHeight: 72 }}>
+            سرخیابون
+          </T>
+          <T color="rgba(255,255,255,0.82)" center>
+            پرو مجازی لباس، قبل از خرید
+          </T>
+        </View>
+
+        <View style={{ backgroundColor: colors.surface, borderRadius: radius.lg, padding: space.xl, gap: space.lg }}>
+        <View style={{ alignItems: 'center', gap: space.sm }}>
+          <T variant="heading" center accessibilityRole="header">
             {step === 'phone' ? 'ورود به سرخیابون' : 'کد را وارد کن'}
           </T>
           <T color={colors.mute} center style={{ maxWidth: 320 }}>
@@ -92,7 +105,7 @@ export default function LoginScreen() {
             label="شماره موبایل"
             value={phone}
             onChangeText={setPhone}
-            placeholder="۰۹۱۲ ۳۴۵ ۶۷۸۹"
+            placeholder={ltr('۰۹۱۲ ۳۴۵ ۶۷۸۹')}
             keyboardType="phone-pad"
             autoComplete="tel"
             textContentType="telephoneNumber"
@@ -149,6 +162,7 @@ export default function LoginScreen() {
           disabled={step === 'phone' ? normalized.length < 10 : code.length !== CODE_LENGTH}
           onPress={() => (step === 'phone' ? send() : verify())}
         />
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

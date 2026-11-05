@@ -14,7 +14,15 @@ import { DiscountTag, Price, T } from './ui';
  * small arch badge; everything else is a plain rounded rectangle — so the
  * shape itself tells the shopper what they can try on.
  */
-export function ProductCard({ product, width }: { product: ProductListItem; width: number }) {
+export function ProductCard({
+  product,
+  width,
+  onPress,
+}: {
+  product: ProductListItem;
+  width: number;
+  onPress?: () => void;
+}) {
   const height = Math.round(width * 1.3);
   const image = product.image ? (
     <Image source={{ uri: product.image }} style={{ width, height }} contentFit="cover" transition={200} />
@@ -24,7 +32,14 @@ export function ProductCard({ product, width }: { product: ProductListItem; widt
     <Pressable
       accessibilityRole="link"
       accessibilityLabel={`${product.name}، ${faNumber(product.price)} تومان${product.supports_tryon ? '، قابل پرو' : ''}`}
-      onPress={() => router.push(`/product/${product.slug}`)}
+      onPress={
+        onPress ??
+        // A product from a registered shop opens that shop, with the chosen item first.
+        (() =>
+          product.shop
+            ? router.push({ pathname: '/shop/[slug]', params: { slug: product.shop.slug, product: product.slug } })
+            : router.push(`/product/${product.slug}`))
+      }
       style={({ pressed }) => ({ width, opacity: pressed ? 0.85 : 1 })}
     >
       <View>

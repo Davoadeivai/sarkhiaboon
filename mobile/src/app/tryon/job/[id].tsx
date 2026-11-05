@@ -1,17 +1,17 @@
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { Mirror } from '@/components/Arch';
+import { BannerCarousel } from '@/components/home';
 import { Icon } from '@/components/Icon';
 import { BottomBar, ScreenHeader } from '@/components/Screen';
 import { Button, ErrorState, Loading, Notice, Price, T } from '@/components/ui';
 import { faDigits, faOrdinal } from '@/lib/format';
 import { DEMO } from '@/lib/demo/runtime';
-import { shareImage } from '@/lib/media';
-import { useJob, useSaveJob } from '@/lib/queries';
+import { useBanners, useJob, useSaveJob } from '@/lib/queries';
 import type { TryOnJob } from '@/lib/types';
 import { colors, GUTTER, radius, space } from '@/theme/tokens';
 
@@ -30,7 +30,7 @@ export default function TryOnJobScreen() {
   const { width } = useWindowDimensions();
   const job = useJob(id);
   const save = useSaveJob();
-  const [shareError, setShareError] = useState<string | null>(null);
+  const ads = useBanners('tryon_wait').data ?? [];
   const announced = useRef(false);
 
   const j = job.data;
@@ -85,6 +85,15 @@ export default function TryOnJobScreen() {
               </T>
             </View>
           )}
+        </View>
+
+        {running && ads.length > 0 && (
+          <View style={{ alignSelf: 'stretch', marginHorizontal: -GUTTER, gap: space.sm }}>
+            <BannerCarousel banners={ads.slice(0, 3)} width={width} interval={3500} />
+          </View>
+        )}
+
+        <View style={{ alignItems: 'center', alignSelf: 'stretch' }}>
 
           {done && (
             <T variant="small" color={colors.mute} center>
@@ -141,29 +150,22 @@ export default function TryOnJobScreen() {
         </Pressable>
 
         {done && (
-          <View style={{ alignSelf: 'stretch', flexDirection: 'row', gap: space.md }}>
+          <View style={{ alignSelf: 'stretch', gap: space.sm }}>
             <Button
-              label={j.is_saved ? 'در کمد است' : 'به کمد'}
+              label={j.is_saved ? 'در کمد من ذخیره شد' : 'ذخیره در کمد من'}
               icon={j.is_saved ? 'check' : 'closet'}
               tone="outline"
-              style={{ flex: 1 }}
               loading={save.isPending}
               onPress={() => save.mutate({ id: j.id, save: !j.is_saved })}
             />
-            <Button
-              label="نظر دوستان"
-              icon="share"
-              tone="outline"
-              style={{ flex: 1 }}
-              onPress={() => {
-                setShareError(null);
-                if (j.result_image)
-                  shareImage(j.result_image, `${j.product.name} — سرخیابون`).catch(() => setShareError('اشتراک‌گذاری انجام نشد.'));
-              }}
-            />
+            <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
+              <Icon name="lock" size={16} color={colors.mute} />
+              <T variant="small" color={colors.mute} style={{ flex: 1 }}>
+                این تصویر فقط داخل سرخیابون و در حساب خودت نگه داشته می‌شود و روی گالری گوشی ذخیره نمی‌شود.
+              </T>
+            </View>
           </View>
         )}
-        {shareError && <Notice tone="error" text={shareError} />}
       </ScrollView>
 
       {(done || failed) && (

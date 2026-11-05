@@ -1,9 +1,10 @@
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 
 import { Arch } from '@/components/Arch';
+import { BannerCarousel } from '@/components/home';
 import { Icon, type IconName } from '@/components/Icon';
 import { BottomBar, ScreenHeader } from '@/components/Screen';
 import { Button, Card, Loading, Notice, T } from '@/components/ui';
@@ -11,7 +12,7 @@ import { isGuest, useAuth } from '@/lib/auth';
 import { demoPerson } from '@/lib/demo/runtime';
 import { faDigits } from '@/lib/format';
 import { photoForm, pickImage, type PickedImage } from '@/lib/media';
-import { useCreateJob, usePhotos, useProduct, useQuota, useUploadPhoto } from '@/lib/queries';
+import { useBanners, useCreateJob, usePhotos, useProduct, useQuota, useUploadPhoto } from '@/lib/queries';
 import { colors, GUTTER, space } from '@/theme/tokens';
 
 const TIPS: { icon: IconName; title: string; body: string }[] = [
@@ -30,6 +31,8 @@ export default function TryOnStart() {
   const upload = useUploadPhoto();
   const createJob = useCreateJob();
   const user = useAuth((s) => s.user);
+  const ads = useBanners('tryon_wait').data ?? [];
+  const { width } = useWindowDimensions();
 
   const [selected, setSelected] = useState<Selected | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,7 +107,7 @@ export default function TryOnStart() {
         {previewUri ? (
           <View style={{ alignItems: 'center', gap: space.md }}>
             <Arch width={200} height={270}>
-              <Image source={{ uri: previewUri }} style={{ width: 200, height: 270 }} contentFit="cover" accessibilityLabel="عکس انتخاب‌شده" />
+              <Image source={{ uri: previewUri }} style={{ width: 200, height: 270 }} contentFit="cover" cachePolicy="memory" accessibilityLabel="عکس انتخاب‌شده" />
             </Arch>
             <Button label="عوض کردن عکس" tone="ghost" icon="refresh" onPress={() => setSelected(null)} />
           </View>
@@ -151,7 +154,7 @@ export default function TryOnStart() {
                       onPress={() => setSelected({ kind: 'saved', id: ph.id, uri: ph.image })}
                     >
                       <Arch width={64} height={86}>
-                        <Image source={{ uri: ph.image }} style={{ width: 64, height: 86 }} contentFit="cover" />
+                        <Image source={{ uri: ph.image }} style={{ width: 64, height: 86 }} contentFit="cover" cachePolicy="memory" />
                       </Arch>
                     </Pressable>
                   ))}
@@ -167,6 +170,15 @@ export default function TryOnStart() {
             عکست فقط برای ساخت همین تصویر استفاده می‌شود، اطلاعات مکانش پاک می‌شود و حداکثر ۲۴ ساعت بعد خودکار حذف می‌شود.
           </T>
         </View>
+
+        {busy && ads.length > 0 && (
+          <View style={{ marginHorizontal: -GUTTER, gap: space.sm }}>
+            <T variant="small" color={colors.mute} center>
+              در حال بارگذاری عکست…
+            </T>
+            <BannerCarousel banners={ads.slice(0, 3)} width={width} interval={3500} />
+          </View>
+        )}
 
         {noQuota && (
           <Notice

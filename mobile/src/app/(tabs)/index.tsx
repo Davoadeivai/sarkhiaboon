@@ -3,14 +3,17 @@ import { RefreshControl, ScrollView, useWindowDimensions, View } from 'react-nat
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Arch } from '@/components/Arch';
-import { BannerCarousel, ProductGrid, ProductRail, ShortcutRow } from '@/components/home';
-import { Icon } from '@/components/Icon';
+import { BannerCarousel, CategoryTiles, ProductGrid } from '@/components/home';
 import { ErrorState, IconButton, Loading, SectionHeader, T } from '@/components/ui';
 import { DEMO } from '@/lib/demo/runtime';
 import { useHome, useQuota } from '@/lib/queries';
-import { faDigits } from '@/lib/format';
 import { colors, GUTTER, space } from '@/theme/tokens';
 
+/**
+ * Home, in the order the client asked for:
+ * 1. three top slides, 2. clothing categories with photos, 3. ad slides,
+ * then the newest items.
+ */
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -21,10 +24,16 @@ export default function HomeScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.porcelain }}
       contentContainerStyle={{ paddingTop: insets.top + space.md, paddingBottom: space.xxxl, gap: space.xl }}
-      refreshControl={<RefreshControl refreshing={home.isRefetching} onRefresh={() => {
+      refreshControl={
+        <RefreshControl
+          refreshing={home.isRefetching}
+          onRefresh={() => {
             home.refetch();
             quota.refetch();
-          }} tintColor={colors.firouzeh} />}
+          }}
+          tintColor={colors.anar}
+        />
+      }
     >
       {DEMO && (
         <View style={{ marginHorizontal: GUTTER, backgroundColor: colors.ink, borderRadius: 999, paddingVertical: 6, paddingHorizontal: space.lg }}>
@@ -33,9 +42,10 @@ export default function HomeScreen() {
           </T>
         </View>
       )}
+
       <View style={{ paddingHorizontal: GUTTER, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: space.sm }}>
-          <Arch width={18} height={34} bottomRadius={0} background={colors.firouzeh} style={{ marginBottom: 14 }} />
+          <Arch width={18} height={34} bottomRadius={0} background={colors.anar} style={{ marginBottom: 14 }} />
           <T variant="hero" accessibilityRole="header">
             سرخیابون
           </T>
@@ -52,37 +62,17 @@ export default function HomeScreen() {
         <ErrorState message={home.error.message} onRetry={() => home.refetch()} />
       ) : home.data ? (
         <>
-          <BannerCarousel banners={home.data.banners_top} width={width} />
-          <ShortcutRow shortcuts={home.data.shortcuts} />
+          <BannerCarousel banners={home.data.banners_top.slice(0, 3)} width={width} />
 
-          {home.data.tryon_products.length > 0 && (
-            <View style={{ gap: space.md }}>
-              <View style={{ paddingHorizontal: GUTTER, gap: 2 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                  <Icon name="arch" size={22} color={colors.firouzeh} />
-                  <T variant="heading">روی عکس خودت امتحانش کن</T>
-                </View>
-                <T variant="small" color={colors.mute}>
-                  {quota.data
-                    ? `امروز ${faDigits(quota.data.remaining)} پروی رایگان داری.`
-                    : 'هر لباسی که قاب طاقی دارد، قابل پرو است.'}
-                </T>
-              </View>
-              <ProductRail products={home.data.tryon_products} cardWidth={156} />
+          {home.data.categories.length > 0 && (
+            <View>
+              <SectionHeader title="دسته‌بندی پوشاک" />
+              <CategoryTiles categories={home.data.categories} width={width} columns={3} />
             </View>
           )}
 
-          <BannerCarousel banners={home.data.banners_middle} width={width} />
-
-          {home.data.discounted_products.length > 0 && (
-            <View>
-              <SectionHeader
-                title="تخفیف‌دارها"
-                action="همه"
-                onAction={() => router.push({ pathname: '/catalog', params: { discounted: '1' } })}
-              />
-              <ProductRail products={home.data.discounted_products} />
-            </View>
+          {home.data.banners_middle.length > 0 && (
+            <BannerCarousel banners={home.data.banners_middle.slice(0, 3)} width={width} interval={5500} />
           )}
 
           {home.data.new_products.length > 0 && (

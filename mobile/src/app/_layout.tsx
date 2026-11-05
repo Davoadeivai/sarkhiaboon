@@ -8,6 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { I18nManager, Platform, View } from 'react-native';
 
+import { Intro } from '@/components/Intro';
 import { ErrorState } from '@/components/ui';
 import { ApiError, startGuestSession } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -55,32 +56,35 @@ export default function RootLayout() {
   }, [ready, access]);
 
   const booted = fontsLoaded && ready && (!!access || !!bootError);
+  // The native splash (red, app.json) hands over to the red intro as soon as the fonts are in.
   useEffect(() => {
-    if (booted) SplashScreen.hideAsync().catch(() => {});
-  }, [booted]);
+    if (fontsLoaded) SplashScreen.hideAsync().catch(() => {});
+  }, [fontsLoaded]);
 
-  if (!booted) return null;
+  if (!fontsLoaded) return null;
 
-  if (bootError && !access) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', backgroundColor: colors.porcelain }}>
-        <ErrorState message={bootError} onRetry={startGuest} />
-      </View>
-    );
-  }
-
+  // One intro instance for the whole launch, so it never restarts while the app boots behind it.
   return (
-    <QueryClientProvider client={queryClient}>
-      <StatusBar style="dark" />
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.porcelain },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="login" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
-      </Stack>
-    </QueryClientProvider>
+    <View style={{ flex: 1, backgroundColor: colors.porcelain }}>
+      {booted && bootError && !access ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <ErrorState message={bootError} onRetry={startGuest} />
+        </View>
+      ) : booted ? (
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="dark" />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.porcelain },
+            }}
+          >
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="login" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
+          </Stack>
+        </QueryClientProvider>
+      ) : null}
+      <Intro ready={booted} />
+    </View>
   );
 }

@@ -17,6 +17,8 @@ export const colors = {
   firouzehDeep: '#0A5E5D',
   firouzehMist: '#E3F1F0',
   saffron: '#E3A22B', // discounts and price highlights only
+  anar: '#B3261E', // pomegranate red: the entry screens (splash, intro, login) — client's choice
+  anarDeep: '#8E1D17',
   saffronMist: '#FBF0DA',
   danger: '#B4372F',
   dangerMist: '#F8E4E2',
